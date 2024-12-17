@@ -2,6 +2,7 @@ package routes
 
 import (
 	"event_booking/models"
+	"event_booking/utils"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -24,6 +25,22 @@ func get_events(ctx *gin.Context) {
 }
 
 func create_event(ctx *gin.Context) {
+	auth_token := ctx.Request.Header.Get("Authorization")
+
+	if auth_token == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "invalid token",
+		})
+		return
+	}
+	ok, _ := utils.VerifyToken(auth_token)
+	if !ok {
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"error": "not logged in",
+		})
+		return
+	}
+
 	var event models.Event
 	err := ctx.BindJSON(&event)
 	if err != nil {
