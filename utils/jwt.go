@@ -18,18 +18,23 @@ func GenerateTokenJwt(username string, userId int) (string, error) {
 	return token.SignedString([]byte(private_key))
 }
 
-func VerifyToken(tokenString string) (bool, error) {
+func VerifyToken(tokenString string) (string, int, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
 		return []byte(private_key), nil
 	})
+
 	if err != nil {
-		return false, err
+		return "", 0, err
 	}
-	if token.Valid {
-		return true, nil
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		fmt.Println("CLAIMS", claims)
+		email := claims["email"].(string)
+		userId := int(claims["userId"].(float64))
+		return email, userId, nil
 	}
-	return false, fmt.Errorf("invalid token")
+
+	return "", 0, fmt.Errorf("invalid token")
 }

@@ -20,15 +20,15 @@ func ComparePassword(password, hashedPassword string) bool {
 	return err == nil
 }
 
-func ValidateUser(email_id string, password string) bool {
+func ValidateUser(email_id string, password string) (*models.User, bool) {
 	user, err := models.GetUserByEmail(email_id) // Get user from DB by email
 	if err != nil {
 		fmt.Println("failed to get email")
-		return false // User not found or other DB error
+		return nil, false // User not found or other DB error
 	}
 
 	// Compare the provided password with the stored password hash
-	return ComparePassword(password, user.Password)
+	return user, ComparePassword(password, user.Password)
 }
 func create_user(ctx *gin.Context) {
 	var user models.User
@@ -61,14 +61,14 @@ func login_user(ctx *gin.Context) {
 		return
 	}
 	fmt.Println("user", user)
-	isValid := ValidateUser(user.Email, user.Password)
+	db_user, isValid := ValidateUser(user.Email, user.Password)
 	if !isValid {
 		ctx.JSON(http.StatusUnauthorized, gin.H{
 			"error": "Invalid email or password",
 		})
 		return
 	}
-	token, err := utils.GenerateTokenJwt(user.Email, user.Id)
+	token, err := utils.GenerateTokenJwt(user.Email, db_user.Id)
 	fmt.Print("error", err)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{

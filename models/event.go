@@ -15,6 +15,33 @@ type Event struct {
 	UserId   int
 }
 
+type EventRegistration struct {
+	Name    string `binding:"required"`
+	UserId  int    `binding:"required"`
+	EventId int    `binding:"required"`
+}
+
+func (e *EventRegistration) Save() error {
+	query := `
+	INSERT INTO events (name, user_id, event_id) 
+	VALUES (?, ?, ?);
+	`
+	statement, err := db.DB.Prepare(query)
+	if err != nil {
+		return fmt.Errorf("failed to prepare query: %v", err)
+	}
+	defer statement.Close()
+	result, err := statement.Exec(e.Name, e.UserId, e.EventId)
+	if err != nil {
+		return fmt.Errorf("failed to execute query: %v", err)
+	}
+	_, err = result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("failed to fetch last inserted ID: %v", err)
+	}
+	return nil
+}
+
 func (e Event) Save() error {
 	query := `
 	INSERT INTO EVENTS (name, location, date, price, user_id) VALUES (?, ?, ?, ?, ?);
